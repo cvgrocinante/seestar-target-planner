@@ -1,0 +1,123 @@
+/* Seestar Target Planner (MIT License). Night-vision observing log: one dark theme with a red accent to protect dark adaptation.
+   Everything is scoped under .seestar-planner so the site template is not affected. */
+.seestar-planner{
+  --ss-sky:#0d0f14; --ss-panel:#151821; --ss-line:#262b38; --ss-ink:#e7e2dc; --ss-dim:#9a9aa6;
+  --ss-red:#ff5a4e; --ss-amber:#e9b44c; --ss-green:#6cc79a; --ss-violet:#d6a7ea;
+  --ss-display:"Barlow Condensed","Roboto Condensed","Arial Narrow","Helvetica Neue",sans-serif;
+  --ss-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --ss-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  color-scheme:dark; background:var(--ss-sky); color:var(--ss-ink); font:15px/1.5 var(--ss-body);
+  border-radius:12px; padding:20px 16px 32px; display:flex; flex-direction:column; gap:18px; max-width:1100px; margin:0 auto;
+}
+.seestar-planner *{box-sizing:border-box}
+.seestar-planner a{color:inherit}
+.seestar-planner .ss-h1{font:700 2rem/1.05 var(--ss-display);letter-spacing:.01em;margin:0;color:var(--ss-ink);text-wrap:balance}
+.seestar-planner .ss-h1 span,.seestar-planner .ss-red{color:var(--ss-red)}
+.seestar-planner .ss-h2{font:600 1.2rem var(--ss-display);margin:0;letter-spacing:.03em;color:var(--ss-ink)}
+.seestar-planner .ss-sub{color:var(--ss-dim);margin:-8px 0 0}
+.seestar-planner .ss-toprow{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.seestar-planner input,.seestar-planner select,.seestar-planner button{background:var(--ss-sky);color:var(--ss-ink);border:1px solid var(--ss-line);border-radius:6px;padding:8px 10px;font:inherit;min-width:0;width:100%;height:auto;margin:0;box-shadow:none}
+.seestar-planner select option{background:var(--ss-panel);color:var(--ss-ink)}
+.seestar-planner button{width:auto;cursor:pointer}
+.seestar-planner .ss-primary,.seestar-planner #ss-findBtn{background:var(--ss-red);color:#1a0c0b;border-color:var(--ss-red);font-weight:600}
+.seestar-planner .ss-primary:hover,.seestar-planner #ss-findBtn:hover{filter:brightness(1.1)}
+.seestar-planner .ss-ghost{background:transparent;color:var(--ss-dim)}
+.seestar-planner :focus-visible{outline:2px solid var(--ss-red);outline-offset:2px}
+.seestar-planner .ss-segs{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.seestar-planner .ss-fit{font:500 .7rem var(--ss-mono);padding:1px 6px;border-radius:4px;border:1px solid var(--ss-line);margin-left:6px;vertical-align:2px;white-space:nowrap}
+.seestar-planner .ss-fit.ss-ok{border-color:#2f6b4f;color:var(--ss-green)}
+.seestar-planner .ss-fit.ss-len{border-color:#6b5a2f;color:var(--ss-amber)}
+.seestar-planner .ss-fit.ss-sm{color:var(--ss-dim)}
+.seestar-planner .ss-fit.ss-mos{border-color:#8f3b35;color:#ff8a80}
+.seestar-planner .ss-seg{display:inline-flex;border:1px solid var(--ss-line);border-radius:8px;overflow:hidden;background:var(--ss-panel)}
+.seestar-planner .ss-seg button{background:transparent;color:var(--ss-dim);border:0;border-radius:0;padding:9px 18px;font:600 1.05rem var(--ss-display);letter-spacing:.04em}
+.seestar-planner .ss-seg button[aria-pressed="true"]{background:var(--ss-red);color:#1a0c0b}
+.seestar-planner .ss-loc{background:var(--ss-panel);border:1px solid var(--ss-line);border-left:3px solid var(--ss-red);border-radius:8px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;margin:0}
+.seestar-planner .ss-fld{display:flex;flex-direction:column;gap:3px;min-width:0}
+.seestar-planner .ss-fld label{color:var(--ss-dim);font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;margin:0}
+.seestar-planner .ss-find{flex:1 1 100%}
+.seestar-planner .ss-findrow{display:flex;gap:8px}
+.seestar-planner .ss-findres{display:flex;flex-direction:column;gap:4px}
+.seestar-planner .ss-findres:empty{display:none}
+.seestar-planner .ss-place{text-align:left;background:var(--ss-sky);font-size:.9rem}
+.seestar-planner .ss-place:hover{border-color:var(--ss-red)}
+.seestar-planner .ss-city{flex:1 1 220px}
+.seestar-planner .ss-ll{flex:0 1 130px}
+.seestar-planner .ss-err{color:var(--ss-amber);font-size:.85rem;flex-basis:100%;margin:0}
+.seestar-planner .ss-err:empty{display:none}
+.seestar-planner .ss-look{background:var(--ss-panel);border:1px solid var(--ss-line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.seestar-planner .ss-lookrow{display:flex;gap:8px;flex-wrap:wrap;margin:0}
+.seestar-planner .ss-lookrow input{flex:1 1 220px;width:auto}
+.seestar-planner .ss-hint{color:var(--ss-dim);font-size:.82rem;margin:0}
+.seestar-planner #ss-lookRes:empty{display:none}
+.seestar-planner .ss-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+.seestar-planner .ss-fact{background:var(--ss-panel);border:1px solid var(--ss-line);border-radius:8px;padding:10px 12px}
+.seestar-planner .ss-fact b{display:block;font:600 1.15rem var(--ss-display);letter-spacing:.02em}
+.seestar-planner .ss-fact small{color:var(--ss-dim);font-size:.78rem}
+.seestar-planner .ss-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;position:sticky;top:0;background:var(--ss-sky);padding:8px 0;z-index:2;border-bottom:1px solid var(--ss-line)}
+.seestar-planner .ss-controls input{flex:1 1 180px;width:auto;background:var(--ss-panel)}
+.seestar-planner .ss-controls select{width:auto;background:var(--ss-panel)}
+.seestar-planner .ss-controls label{color:var(--ss-dim);font-size:.8rem;margin:0}
+.seestar-planner .ss-count{color:var(--ss-dim);font-size:.85rem;margin-left:auto}
+.seestar-planner .ss-pgbar{display:flex;flex-direction:column;align-items:center;gap:10px}
+.seestar-planner .ss-per{display:flex;align-items:center;gap:8px;color:var(--ss-dim);font-size:.85rem}
+.seestar-planner .ss-per label{margin:0;color:var(--ss-dim)}
+.seestar-planner .ss-per select{width:auto;background:var(--ss-panel)}
+.seestar-planner .ss-pager{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center}
+.seestar-planner .ss-pager:empty{display:none}
+.seestar-planner .ss-pager button{background:var(--ss-panel);color:var(--ss-ink);border:1px solid var(--ss-line);border-radius:6px;padding:7px 12px;font:500 .9rem var(--ss-mono);min-width:40px}
+.seestar-planner .ss-pager button:hover:not(:disabled){border-color:var(--ss-red)}
+.seestar-planner .ss-pager button[aria-current="page"]{background:var(--ss-red);color:#1a0c0b;border-color:var(--ss-red);font-weight:600}
+.seestar-planner .ss-pager button:disabled{opacity:.35;cursor:default}
+.seestar-planner .ss-pager .ss-range{color:var(--ss-dim);font-size:.82rem;flex-basis:100%;text-align:center}
+.seestar-planner .ss-head,.seestar-planner .ss-row{display:grid;grid-template-columns:34px minmax(170px,1.6fr) 90px 80px minmax(170px,1.4fr) 60px 80px;gap:12px;align-items:start;padding:10px 12px}
+.seestar-planner .ss-head{color:var(--ss-dim);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--ss-line)}
+.seestar-planner .ss-row{border-bottom:1px solid var(--ss-line)}
+.seestar-planner .ss-row:hover{background:#12151d}
+.seestar-planner .ss-off{opacity:.45}
+.seestar-planner .ss-rk{font:600 1.1rem var(--ss-mono);color:var(--ss-dim)}
+.seestar-planner .ss-nm{font-weight:600}
+.seestar-planner .ss-mem{color:var(--ss-dim);font-size:.82rem}
+.seestar-planner .ss-note{color:#c9c3bc;font-size:.82rem;margin-top:4px}
+.seestar-planner .ss-mono{font-family:var(--ss-mono);font-variant-numeric:tabular-nums;font-size:.86rem}
+.seestar-planner .ss-dim{color:var(--ss-dim)}
+.seestar-planner .ss-wk{color:var(--ss-ink);text-decoration:underline;text-decoration-color:var(--ss-red);text-underline-offset:3px;text-decoration-thickness:1px}
+.seestar-planner .ss-wk:hover{color:var(--ss-red)}
+.seestar-planner .ss-wl{font-size:.8rem;color:var(--ss-dim);margin-top:2px}
+.seestar-planner .ss-wl .ss-wk{color:#c9c3bc}
+.seestar-planner .ss-flt{font:500 .7rem var(--ss-mono);padding:1px 6px;border-radius:4px;border:1px solid var(--ss-line);color:var(--ss-dim);margin-left:6px;vertical-align:2px;white-space:nowrap}
+.seestar-planner .ss-flt.ss-db{border-color:#7a4a8f;color:var(--ss-violet)}
+.seestar-planner .ss-typ{font:500 .72rem var(--ss-mono);color:var(--ss-amber)}
+.seestar-planner .ss-win{display:flex;flex-direction:column;gap:3px}
+.seestar-planner .ss-pill{display:inline-block;font:500 .78rem var(--ss-mono);padding:2px 7px;border-radius:999px;border:1px solid var(--ss-line);white-space:nowrap}
+.seestar-planner .ss-pill.ss-now{border-color:var(--ss-green);color:var(--ss-green)}
+.seestar-planner .ss-tag{font-size:.72rem;display:block}
+.seestar-planner .ss-low{color:var(--ss-amber)}
+.seestar-planner .ss-zen{color:var(--ss-dim)}
+.seestar-planner .ss-int{font:600 1.05rem var(--ss-display);color:var(--ss-red);letter-spacing:.03em}
+.seestar-planner .ss-lbl{display:none}
+.seestar-planner .ss-c-pk{display:flex;flex-direction:column}
+.seestar-planner .ss-busy{color:var(--ss-dim);padding:20px 12px;margin:0}
+.seestar-planner .ss-tips{background:var(--ss-panel);border:1px solid var(--ss-line);border-radius:8px;padding:12px 16px}
+.seestar-planner .ss-tips ul{margin:6px 0 0;padding-left:18px;display:grid;gap:4px}
+.seestar-planner .ss-foot{color:var(--ss-dim);font-size:.78rem;margin:0}
+@media (max-width:760px){
+  .seestar-planner .ss-segs{justify-content:flex-start}
+  .seestar-planner .ss-pager{gap:4px}
+  .seestar-planner .ss-pager button{padding:6px 8px;min-width:34px}
+  .seestar-planner .ss-head{display:none}
+  .seestar-planner .ss-row{grid-template-columns:auto 1fr auto;gap:6px 10px;padding:12px 4px}
+  .seestar-planner .ss-c-int{text-align:right}
+  .seestar-planner .ss-c-se,.seestar-planner .ss-c-pk,.seestar-planner .ss-c-win,.seestar-planner .ss-c-alt{grid-column:1/-1;display:flex;flex-direction:row;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .seestar-planner .ss-row>.ss-c-int{grid-column:3;grid-row:1}
+  .seestar-planner .ss-lbl{display:inline;color:var(--ss-dim);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;min-width:74px}
+  .seestar-planner .ss-win{flex-direction:row;flex-wrap:wrap}
+  .seestar-planner .ss-ll{flex:1 1 40%}
+}
+@media (max-width:440px){.seestar-planner .ss-pt{display:none}}
+@media (prefers-reduced-motion:reduce){.seestar-planner *{transition:none!important}}
+
+/* Stand-alone page */
+html,body{margin:0;background:#0d0f14;color:#e7e2dc}
+body{padding:16px 0}
+main{padding:0 8px}

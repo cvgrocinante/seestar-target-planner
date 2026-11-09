@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://nominatim.openstreetmap.org; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="description" content="Plan galaxy and nebula imaging for ZWO Seestar smart telescopes: top-50 targets, moon-dark windows, framing and integration times for any location.">
+<meta name="color-scheme" content="dark">
+<meta name="author" content="Jeff Boerio">
+<title>Seestar Target Planner</title>
+<link rel="stylesheet" href="css/planner.css">
+<!-- Settings read by js/planner.js. Change the default location, list or telescope here. -->
+<script type="application/json" id="ss-config">
+{
+  "lists": "data/targets.json",
+  "cities": "data/cities.json",
+  "catalog": "data/catalog.json",
+  "defaults": { "name": "Rockwood, TX", "lat": 31.4935, "lon": -99.3706, "list": "galaxies", "scope": "S30P" }
+}
+</script>
+<script defer src="js/planner.js"></script>
+</head>
+<body>
+<main>
+<div class="seestar-planner" id="ss-app">
+<header class="ss-toprow">
+  <h1 class="ss-h1">Top 50 <span id="ss-hKind">Galaxies</span></h1>
+  <div class="ss-segs">
+    <div class="ss-seg" role="group" aria-label="Telescope" id="ss-scopeSeg">
+      <button type="button" data-s="S30">S30</button><button type="button" data-s="S30P">S30 Pro</button><button type="button" data-s="S50">S50</button><button type="button" data-s="S50P">S50 Pro</button>
+    </div>
+    <div class="ss-seg" role="group" aria-label="Target list">
+      <button id="ss-bG" type="button" aria-pressed="true">Galaxies</button><button id="ss-bN" type="button" aria-pressed="false">Nebulae</button>
+    </div>
+  </div>
+</header>
+<p class="ss-sub">Dates are computed for your location over the next 12 months: astronomical darkness, target above 25° (lower for targets that never get that high). Dark windows are runs of nights when the Moon is down or under 25% lit while the target is up.</p>
+
+<form class="ss-loc" id="ss-locForm" aria-label="Observing location">
+    <div class="ss-fld ss-find">
+    <label for="ss-findQ">Search any town or place</label>
+    <div class="ss-findrow"><input id="ss-findQ" type="search" autocomplete="off" placeholder="e.g. Brady, TX"><button type="button" id="ss-findBtn">Find</button></div>
+    <div id="ss-findRes" class="ss-findres" aria-live="polite"></div>
+  </div>
+    <div class="ss-fld ss-city"><label for="ss-city">Or pick a city</label><select id="ss-city"></select></div>
+  <div class="ss-fld ss-ll"><label for="ss-lat">Latitude (°N +)</label><input id="ss-lat" class="ss-mono" inputmode="decimal" placeholder="31.49"></div>
+  <div class="ss-fld ss-ll"><label for="ss-lon">Longitude (°E +)</label><input id="ss-lon" class="ss-mono" inputmode="decimal" placeholder="-99.37"></div>
+  <button type="submit" class="ss-primary">Calculate</button>
+  <p class="ss-err" id="ss-err" role="alert"></p>
+</form>
+
+<section class="ss-look" aria-labelledby="ss-lookH">
+  <h2 id="ss-lookH" class="ss-h2">Look up any Messier, NGC or IC object</h2>
+  <form id="ss-lookForm" class="ss-lookrow"><input id="ss-lookQ" type="search" placeholder="M27, NGC 7000, IC 1805, or a name like Orion" aria-label="Catalog designation or common name"><button type="submit" class="ss-primary">Look up</button><button type="button" class="ss-ghost" id="ss-lookClear">Clear</button></form>
+  <p class="ss-hint">Uses the OpenNGC catalog (about 14,000 objects). Integration for lookups is estimated from object type, brightness and size.</p>
+  <div id="ss-lookRes"></div>
+</section>
+
+<section class="ss-facts" aria-label="Setup">
+  <div class="ss-fact"><b id="ss-fLoc"></b><small id="ss-fLL" class="ss-mono"></small></div>
+  <div class="ss-fact"><b id="ss-fScope">Seestar S30 Pro</b><small id="ss-fScopeSpec" class="ss-mono"></small></div>
+  <div class="ss-fact"><b id="ss-fRange"></b><small>Window covered</small></div>
+  <div class="ss-fact"><b>New moons (≈)</b><small class="ss-mono" id="ss-fNM"></small></div>
+</section>
+
+<div class="ss-controls">
+  <input id="ss-q" type="search" placeholder="Filter this list" aria-label="Filter the top 50 list">
+  <label for="ss-mo">Good in</label>
+  <select id="ss-mo"><option value="">Any month</option></select>
+  <label for="ss-sort">Sort</label>
+  <select id="ss-sort"><option value="rank">Rank</option><option value="win">Next dark window</option><option value="peak">Peak date</option><option value="int">Integration</option><option value="fit">Framing</option></select>
+  <span class="ss-count" id="ss-count"></span>
+</div>
+
+<div role="table" aria-label="Top 50 targets">
+  <div class="ss-head" role="row"><span>#</span><span>Target</span><span>Season</span><span>Peak</span><span>Next dark windows</span><span>Max alt</span><span>Integration</span></div>
+  <div id="ss-rows"><p class="ss-busy">Loading…</p></div>
+</div>
+<div class="ss-pgbar">
+  <nav class="ss-pager" id="ss-pager" aria-label="Result pages"></nav>
+  <div class="ss-per"><label for="ss-per">Show</label>
+    <select id="ss-per"><option value="10">10</option><option value="20">20</option><option value="30">30</option><option value="40">40</option><option value="50">50</option><option value="0">All</option></select><span>per page</span></div>
+</div>
+<noscript><p class="ss-err">COM_SEESTAR_NOSCRIPT</p></noscript>
+
+<section class="ss-tips">
+  <h2 class="ss-h2">Integration notes</h2>
+  <ul>
+    <li>Integration is total stacked time at 10–20 s subs. Start at the low end; go to the high end (or past it) for faint arms, tails, halos and outer nebulosity.</li>
+    <li>Filter tags: <b>UV/IR</b> = the standard UV/IR-cut filter (galaxies, reflection nebulae, clusters). <b>Dual-band</b> = the built-in Ha/OIII filter (emission nebulae, planetaries, supernova remnants), which also cuts moonlight and light pollution.</li>
+    <li>Framing tags compare each target with the selected scope's field: <b>Fits</b> (any rotation), <b>Fits lengthwise</b> (fits when the field's long side lines up, which changes through the night in alt-az mode), <b>Small</b> (fits easily; crop afterward), or the <b>mosaic</b> size needed. Seestar's mosaic mode can capture those.</li>
+    <li id="ss-tipInteg">Integration times are set for the S30 Pro.</li>
+    <li id="ss-tipBatt">Split long totals across several nights in the same dark window and stack them. Battery is about 6 h, so plan one or two targets per night.</li>
+    <li>Targets tagged “near zenith” climb past 80°, where alt-az tracking struggles. Image them a couple of hours either side of transit, or use EQ mode on a wedge.</li>
+    <li>Amber “low” targets never clear 30° from this location. Image them within an hour or so of transit with a clean horizon in their direction.</li>
+    <li>Greyed-out targets never rise high enough to image from this location.</li>
+  </ul>
+</section>
+<p class="ss-foot">Season = months averaging at least half of the target's best-night dark hours. Peak = the night the target is up longest in full darkness. Dates are local calendar nights, labeled by the evening date. Sun and Moon use low-precision formulas, good to a few minutes. Positions J2000; sizes and magnitudes are approximate. Lookup data: OpenNGC by Mattia Verga (CC BY-SA 4.0). Place search © OpenStreetMap contributors, via Nominatim.</p>
+</div>
+</main>
+</body>
+</html>
