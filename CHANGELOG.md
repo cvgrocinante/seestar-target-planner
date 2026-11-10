@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.2.0 (2026-11-10)
+
+- New **Min altitude** setting (10°–50° in 5° steps, default 25°): the lowest altitude counted as imaging time.
+  Seasons, peak nights, dark windows, chart threshold lines and hours in darkness all follow it. The default can be
+  changed in the `ss-config` block in `index.html`.
+- **Moon distance rule:** a bright Moon (25% lit or more, above the horizon) no longer rules out a night if it stays
+  at least 60° from a dual-band target or 90° from a UV/IR target. Dark windows count those nights; each chart adds
+  a line saying how close the Moon comes tonight; new **Moon distance** sort lists the safest targets first.
+- **Red light** button: switches the page to red-only light (no green or blue anywhere, charts included) with
+  outlined buttons instead of solid fills, to protect night vision at the telescope. Remembered per browser.
+- **Back to top** button appears after scrolling down.
+- On phones, the filter/sort bar now scrolls away instead of staying pinned.
+- Low-target thresholds never exceed the chosen setting (previously they could be 1–2° above 25° for targets whose
+  highest point is 33–35°).
+
 ## 1.1.0 (2026-11-10)
 
 - Tonight's altitude chart for every target and lookup: altitude curve, Moon path, twilight shading, the imaging
