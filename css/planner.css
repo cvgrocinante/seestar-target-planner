@@ -121,3 +121,8 @@
 html,body{margin:0;background:#0d0f14;color:#e7e2dc}
 body{padding:16px 0}
 main{padding:0 8px}
+
+.seestar-planner .ss-altw{margin-top:8px;max-width:340px;width:100%}
+.seestar-planner .ss-altc{display:block;width:100%;height:auto;touch-action:pan-y;cursor:crosshair;border-radius:5px}
+.seestar-planner .ss-altcap{font:500 .7rem/1.35 var(--ss-mono);color:var(--ss-dim);margin-top:3px;min-height:1.35em}
+.seestar-planner .ss-altw.ss-on .ss-altcap{color:var(--ss-ink)}

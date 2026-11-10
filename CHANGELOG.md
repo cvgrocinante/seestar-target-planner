@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.0 (2026-11-10)
+
+- Tonight's altitude chart for every target and lookup: altitude curve, Moon path, twilight shading, the imaging
+  threshold and a "now" marker, with hover/drag read-out of altitude, compass direction and time. Times use the
+  device's time zone.
+- Max altitude now counts only full darkness. The column shows tonight's highest point in darkness, with the best
+  for the next 12 months underneath.
+- New sort option: Max altitude (tonight, in darkness).
+- Fixed: the no-JavaScript message showed a placeholder instead of text.
+- Fixed: group sizes such as "9x4 (each)" no longer get a stray arcminute mark.
+
 ## 1.0.0 (2026-11-08)
 
 First public release of the stand-alone web version.

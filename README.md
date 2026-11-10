@@ -16,12 +16,15 @@ it, whether it fits in the frame, and how much total integration to collect.
 - **For each target, over the next 12 months:**
   - season and peak night
   - next two moon-dark windows
-  - maximum altitude, with warnings for low targets and for targets passing near the zenith (hard for alt-az tracking)
+  - highest altitude in full darkness, tonight and over the year, with warnings for low targets and for targets
+    passing near the zenith (hard for alt-az tracking)
+- **Tonight's altitude chart** for each target: altitude curve, Moon, twilight shading and a "now" marker. Hover or
+  drag across it to read altitude, direction and time.
 - **Telescope selector** (S30, S30 Pro, S50, S50 Pro):
   - framing tags: fits, fits lengthwise, small (crop afterward), or the mosaic size needed
   - integration times rescaled for each scope
 - **Look up any Messier, NGC or IC object** from the OpenNGC catalog (about 14,000 objects) and get the same details.
-- Filter by month; sort by rank, next dark window, peak date, integration or framing; show 10–50 targets per page or all of them.
+- Filter by month; sort by rank, next dark window, peak date, integration, framing or max altitude; show 10–50 targets per page or all of them.
 - Works on phones. Your location, telescope, list and page size are remembered in your browser.
 
 ## How the numbers are worked out

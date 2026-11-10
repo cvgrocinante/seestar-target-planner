@@ -45,9 +45,14 @@ function prepSite(lat,lon,start){
 const fmtD=d=>`${MON[d.getUTCMonth()]} ${d.getUTCDate()}`;
 const fmtW=(a,b)=>a.getTime()===b.getTime()?`${fmtD(a)}, ${a.getUTCFullYear()}`:a.getUTCMonth()===b.getUTCMonth()?`${fmtD(a)}–${b.getUTCDate()}, ${b.getUTCFullYear()}`:`${fmtD(a)} – ${fmtD(b)}, ${b.getUTCFullYear()}`;
 function evalTarget(S,ra,dec){
-  const maxalt=90-Math.abs(S.lat-dec), thr=maxalt>=35?25:Math.max(12,maxalt-8);
+  // Max altitude = highest point reached during astronomical darkness (Sun below -18°) over the 12 months,
+  // not the geometric culmination, which can fall in daylight or twilight.
+  const sd=sinD(dec)*sinD(S.lat), cd=cosD(dec)*cosD(S.lat);
+  let maxV=-1;
+  S.nights.forEach(nt=>{ for(let i=0;i<nt.ls.length;i++){ const v=sd+cd*cosD(nt.ls[i]-ra); if(v>maxV) maxV=v; } });
+  const maxalt=Math.asin(Math.max(-1,Math.min(1,maxV)))/RAD, thr=maxalt>=35?25:Math.max(12,maxalt-8);
   if(maxalt<12) return {visible:false,maxalt:Math.round(maxalt)};
-  const tot=new Float32Array(NIGHTS), mf=new Float32Array(NIGHTS), sd=sinD(dec)*sinD(S.lat), cd=cosD(dec)*cosD(S.lat), st=sinD(thr);
+  const tot=new Float32Array(NIGHTS), mf=new Float32Array(NIGHTS), st=sinD(thr);
   S.nights.forEach((nt,n)=>{for(let i=0;i<nt.ls.length;i++){ if(sd+cd*cosD(nt.ls[i]-ra)>=st){tot[n]+=STEP/60; if(nt.ok[i]) mf[n]+=STEP/60;} }});
   let pi=0; for(let n=1;n<NIGHTS;n++) if(tot[n]>tot[pi]) pi=n;
   const peakH=tot[pi]; if(peakH<0.5) return {visible:false,maxalt:Math.round(maxalt)};
@@ -181,6 +186,93 @@ function updateScopeUI(){
   $('tipBatt').textContent=`Split long totals across several nights in the same dark window and stack them. Battery is about ${G.batt} h, so plan one or two targets per night.`;
 }
 function setScope(k){ if(!SCOPES[k]) return; scope=k; G=scopeGeom(k); store.set('seestarScope',k); updateScopeUI(); render(); renderLook(); }
+// ---- Tonight's altitude chart. Times are shown in the device's time zone.
+const CW=300, CHT=70, A0=-10, A1=90, CSTEP=10, NIGHT_H=19;
+const CMP=['N','NE','E','SE','S','SW','W','NW'];
+const fmtClock=ms=>new Date(ms).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+const azOf=(ra,dec,lat,l)=>{ const H=l-ra; return norm(Math.atan2(sinD(H),cosD(H)*sinD(lat)-Math.tan(dec*RAD)*cosD(lat))/RAD+180); };
+let nightCache=null;
+function tonight(){
+  // "Tonight" runs from 3 pm to 10 am local solar time at the site, starting from the most recent site noon.
+  const now=Date.now(), off=S.lon/15*3600e3, lmt=new Date(now+off);
+  let noon=Date.UTC(lmt.getUTCFullYear(),lmt.getUTCMonth(),lmt.getUTCDate(),12)-off;
+  if(now<noon) noon-=864e5;
+  const key=`${S.lat},${S.lon},${noon}`;
+  if(nightCache&&nightCache.key===key) return nightCache;
+  const t0=noon+3*3600e3, n=Math.round(NIGHT_H*60/CSTEP)+1, ls=[], sun=[], moon=[];
+  let illum=0;
+  for(let k=0;k<n;k++){
+    const jd=(t0+k*CSTEP*6e4)/864e5+2440587.5, l=lstOf(jd,S.lon), sp=sunPos(jd), mp=moonPos(jd);
+    ls.push(l); sun.push(altOf(sp.ra,sp.dec,S.lat,l)); moon.push(altOf(mp.ra,mp.dec,S.lat,l)-mp.par);
+    if(k===Math.floor(n/2)) illum=(1-cosD(mp.bet)*cosD(mp.lam-sp.lam))/2;
+  }
+  // Sky background: merge runs of the same twilight phase into one band.
+  const tone=a=>a>-0.83?0:a>-6?1:a>-12?2:a>-18?3:4, cols=['#1d3150','#2a2443','#1a1b33','#121424','#07080d'], dx=CW/(n-1);
+  let bands='', st=0;
+  for(let k=1;k<=n;k++){ if(k===n||tone(sun[k])!==tone(sun[st])){ const x0=Math.max(0,(st-0.5)*dx), x1=Math.min(CW,(k-0.5)*dx); bands+=`<rect x="${x0.toFixed(1)}" y="0" width="${(x1-x0).toFixed(1)}" height="${CHT}" fill="${cols[tone(sun[st])]}"/>`; st=k; } }
+  let ticks='';
+  for(let ms=Math.ceil(t0/18e5)*18e5; ms<=t0+NIGHT_H*36e5; ms+=18e5){
+    const d=new Date(ms); if(d.getMinutes()!==0||d.getHours()%3!==0) continue;
+    const x=(ms-t0)/(NIGHT_H*36e5)*CW; if(x<14||x>CW-14) continue;
+    ticks+=`<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${CHT}" y2="${CHT+2.5}" stroke="#5c6070" stroke-width=".7"/><text x="${x.toFixed(1)}" y="${CHT+10}" text-anchor="middle" font-size="7.5" fill="#8b90a3">${d.toLocaleTimeString([], {hour:'numeric'})}</text>`;
+  }
+  return nightCache={key,t0,n,ls,sun,moon,illum,bands,ticks};
+}
+function tonightMax(ra,dec){
+  if(!S||!isFinite(ra)||!isFinite(dec)) return null;
+  const N=tonight(); let m=null;
+  for(let k=0;k<N.n;k++){ if(N.sun[k]>-18) continue; const a=altOf(ra,dec,S.lat,N.ls[k]); if(m===null||a>m) m=a; }
+  return m; // null if there is no full darkness tonight
+}
+const raOf=o=>o.raD!=null?+o.raD:raDeg(o.ra), decOf=o=>o.decD!=null?+o.decD:decDeg(o.dec);
+function altChart(ra,dec){
+  if(!S||!isFinite(ra)||!isFinite(dec)) return '';
+  const N=tonight(), n=N.n, dx=CW/(n-1), y=a=>(A1-Math.max(A0,Math.min(A1,a)))/(A1-A0)*CHT;
+  const maxalt=90-Math.abs(S.lat-dec), thr=maxalt>=35?25:Math.max(12,maxalt-8);
+  const alts=N.ls.map(l=>altOf(ra,dec,S.lat,l));
+  // Peak = highest point during astronomical darkness, which is what matters for imaging.
+  let best=-1, good=0;
+  alts.forEach((a,k)=>{ if(N.sun[k]<=-18){ if(best<0||a>alts[best]) best=k; if(a>=thr) good+=CSTEP; } });
+  if(best<0) best=alts.indexOf(Math.max(...alts));
+  const path=arr=>arr.map((a,k)=>`${k?'L':'M'}${(k*dx).toFixed(1)},${y(a).toFixed(1)}`).join('');
+  const nowF=(Date.now()-N.t0)/(NIGHT_H*36e5);
+  const now=nowF>0&&nowF<1?`<line x1="${(nowF*CW).toFixed(1)}" x2="${(nowF*CW).toFixed(1)}" y1="0" y2="${CHT}" stroke="#4aa8ff" stroke-width=".9" stroke-dasharray="3 2"/><text x="${(nowF*CW+2).toFixed(1)}" y="8" font-size="7" font-weight="700" fill="#4aa8ff">now</text>`:'';
+  const up=alts[best]>0&&N.sun[best]<=-18, bx=best*dx, by=y(alts[best]);
+  const az=alts.map((a,k)=>Math.round(azOf(ra,dec,S.lat,N.ls[k])));
+  const moonPct=Math.round(N.illum*100);
+  const cap=up?`Tonight: highest in darkness ${Math.round(alts[best])}° ${CMP[Math.round(az[best]/45)%8]} at ${fmtClock(N.t0+best*CSTEP*6e4)} · ${(good/60).toFixed(1)} h above ${Math.round(thr)}° in darkness · Moon ${moonPct}%`
+               :`Not above the horizon in darkness tonight · Moon ${moonPct}%`;
+  return `<div class="ss-altw"><svg class="ss-altc" viewBox="0 0 ${CW} ${CHT+13}" role="img" aria-label="${esc(cap)}" data-t0="${N.t0}" data-n="${n}" data-best="${best}" data-up="${up?1:0}" data-a="${alts.map(a=>a.toFixed(1)).join(',')}" data-z="${az.join(',')}">
+${N.bands}<line x1="0" x2="${CW}" y1="${y(thr).toFixed(1)}" y2="${y(thr).toFixed(1)}" stroke="#7d869f" stroke-width=".7" stroke-dasharray="3 3" opacity=".75"/><line x1="0" x2="${CW}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}" stroke="#3a3f55" stroke-width=".6"/>
+<path d="${path(N.moon)}" fill="none" stroke="#9aa0b3" stroke-width="1" stroke-dasharray="2 2" opacity=".6"/>${up?`<path d="${path(alts)}" fill="none" stroke="#ff5a4e" stroke-width="1.8" stroke-linejoin="round"/>`:''}${now}
+<line class="ss-acur" x1="${bx.toFixed(1)}" x2="${bx.toFixed(1)}" y1="0" y2="${CHT}" stroke="#fff" stroke-width=".6" stroke-dasharray="2 2" opacity="0"/><circle class="ss-adot" cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="3" fill="#fff" stroke="#ff5a4e" stroke-width="1.6" visibility="${up?'visible':'hidden'}"/>
+${N.ticks}</svg><div class="ss-altcap" data-def="${esc(cap)}">${esc(cap)}</div></div>`;
+}
+// Hover or drag across a chart to read altitude, direction and time.
+(function(){
+  let active=null;
+  const reset=sv=>{ const w=sv.parentNode, k=+sv.dataset.best, dx=CW/(+sv.dataset.n-1), a=+sv.dataset.a.split(',')[k];
+    w.classList.remove('ss-on'); w.querySelector('.ss-altcap').textContent=w.querySelector('.ss-altcap').dataset.def;
+    sv.querySelector('.ss-acur').setAttribute('opacity','0');
+    const d=sv.querySelector('.ss-adot'); d.setAttribute('cx',(k*dx).toFixed(1)); d.setAttribute('cy',((A1-Math.max(A0,Math.min(A1,a)))/(A1-A0)*CHT).toFixed(1)); d.setAttribute('visibility',sv.dataset.up==='1'?'visible':'hidden'); };
+  document.addEventListener('pointermove',e=>{
+    const sv=e.target.closest?e.target.closest('.ss-altc'):null;
+    if(active&&active!==sv){ reset(active); active=null; }
+    if(!sv) return;
+    active=sv;
+    if(!sv._a){ sv._a=sv.dataset.a.split(',').map(Number); sv._z=sv.dataset.z.split(',').map(Number); }
+    const n=+sv.dataset.n, dx=CW/(n-1), r=sv.getBoundingClientRect(), k=Math.max(0,Math.min(n-1,Math.round((e.clientX-r.left)/r.width*CW/dx)));
+    const a=sv._a[k], x=(k*dx).toFixed(1), t=fmtClock(+sv.dataset.t0+k*CSTEP*6e4);
+    sv.querySelector('.ss-acur').setAttribute('x1',x); sv.querySelector('.ss-acur').setAttribute('x2',x); sv.querySelector('.ss-acur').setAttribute('opacity','.6');
+    const d=sv.querySelector('.ss-adot'); d.setAttribute('cx',x); d.setAttribute('cy',((A1-Math.max(A0,Math.min(A1,a)))/(A1-A0)*CHT).toFixed(1)); d.setAttribute('visibility','visible');
+    sv.parentNode.classList.add('ss-on');
+    sv.parentNode.querySelector('.ss-altcap').textContent= a>0?`${t} · altitude ${Math.round(a)}° · ${CMP[Math.round(sv._z[k]/45)%8]}`:`${t} · below the horizon`;
+  });
+  const off=()=>{ if(active){ reset(active); active=null; } };
+  document.addEventListener('pointercancel',off);
+  document.addEventListener('pointerup',e=>{ if(e.pointerType!=='mouse') off(); });
+  document.documentElement.addEventListener('mouseleave',off);
+})();
 function rowHTML(o,rank,r){
   const links=o.wiki.map(w=>`<a class="ss-wk" href="${esc(w[1])}" target="_blank" rel="noopener">${esc(w[0])}</a>`);
   const nameHTML=`<a class="ss-wk" href="${esc(o.wiki[0][1])}" target="_blank" rel="noopener">${esc(o.name)}</a>`;
@@ -195,8 +287,8 @@ function rowHTML(o,rank,r){
   return `<div class="ss-row" role="row">${head}
 <div class="ss-c-se"><span class="ss-lbl">Season</span><span class="ss-mono">${r.season}</span></div>
 <div class="ss-c-pk"><span class="ss-lbl">Peak</span><span class="ss-mono">${r.peak}</span><span class="ss-mono ss-dim">${r.peakH} h</span></div>
-<div class="ss-c-win"><span class="ss-lbl">Dark</span><div class="ss-win">${w}</div></div>
-<div class="ss-c-alt"><span class="ss-lbl">Max alt</span><span class="ss-mono">${r.maxalt}°</span>${tags}</div>
+<div class="ss-c-win"><span class="ss-lbl">Dark</span><div class="ss-win">${w}</div>${altChart(raOf(o),decOf(o))}</div>
+<div class="ss-c-alt"><span class="ss-lbl">Max alt</span>${(()=>{ const t=tonightMax(raOf(o),decOf(o)); return t===null?'<span class="ss-mono">—</span><span class="ss-tag ss-zen">no full dark tonight</span>':t>0?`<span class="ss-mono">${Math.round(t)}°</span><span class="ss-tag ss-zen">tonight</span>`:'<span class="ss-mono">—</span><span class="ss-tag ss-zen">below horizon tonight</span>'; })()}<span class="ss-tag ss-zen">year ${r.maxalt}°</span>${tags}</div>
 <div class="ss-c-int"><span class="ss-int">${esc(scaleInteg(o.integ))}</span>${o.est?'<span class="ss-tag ss-zen">estimate</span>':''}</div></div>`;
 }
 function render(){
@@ -204,7 +296,7 @@ function render(){
   const L=LISTS[kind], RR=R[kind];
   const q=$('q').value.trim().toLowerCase(), m=+$('mo').value, s=$('sort').value;
   let rows=L.map((t,i)=>({...t,rank:i+1,r:RR[i]})).filter(o=>(!q||(o.name+' '+o.members).toLowerCase().includes(q))&&(!m||(o.r.visible&&inSeason(o.r.season,m))));
-  const key={fit:o=>{const x=framing(o.frame);return x?x.k*10-x.f:99;},rank:o=>o.rank,win:o=>o.r.visible?o.r.winStart:1e5,peak:o=>o.r.visible?o.r.peakKey:1e5,int:o=>parseFloat(o.integ)};
+  const key={alt:o=>{ if(!o.r.visible) return 1e5; const t=tonightMax(raOf(o),decOf(o)); return t===null||t<=0?1e4-o.r.maxalt:-t; },fit:o=>{const x=framing(o.frame);return x?x.k*10-x.f:99;},rank:o=>o.rank,win:o=>o.r.visible?o.r.winStart:1e5,peak:o=>o.r.visible?o.r.peakKey:1e5,int:o=>parseFloat(o.integ)};
   rows.sort((a,b)=>{const x=key[s](a),y=key[s](b);return x<y?-1:x>y?1:a.rank-b.rank;});
   if(s==='rank') rows.sort((a,b)=>(b.r.visible-a.r.visible)||a.rank-b.rank);
   const total=rows.length, per=+$('per').value||total||1, pages=Math.max(1,Math.ceil(total/per));
@@ -312,6 +404,7 @@ function init(){
     document.querySelectorAll('#ss-scopeSeg button').forEach(b=>b.addEventListener('click',()=>setScope(b.dataset.s)));
     const sk=store.get('seestarScope'); if(SCOPES[sk]){ scope=sk; G=scopeGeom(sk); }
     updateScopeUI();
+    try{ $('tipChart').textContent+=` Chart times use this device's time zone (${Intl.DateTimeFormat().resolvedOptions().timeZone}).`; }catch(e){}
     let saved=null; try{ saved=JSON.parse(store.get('seestarLoc')); }catch(e){}
     setFields(saved&&isFinite(saved.lat)&&isFinite(saved.lon)?saved:DEF);
     run();
